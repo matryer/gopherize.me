@@ -15,6 +15,14 @@
 		location.href = '/api/render?images=' + encodeURIComponent(selection.join('|'))
 	})
 
+	$('#share-button').click(function(){
+		var $this = $(this)
+		var absURL = apihost+'render?images=' + encodeURIComponent(selection.join('|'))
+		var text = "I just Gopherized myself on https://gopherize.me via @ashleymcnamara and @matryer"
+		var shareURL = 'https://twitter.com/share?url='+encodeURIComponent(absURL)+'&text='+encodeURIComponent(text)+'&hashtags=golang,gopherize'
+		window.open(shareURL)
+	})
+
 	function loadArtwork(callback) {
 		busy(true)
 		$.ajax({
@@ -53,7 +61,6 @@
 	}
 
 	function updatePreview() {
-
 		$('#download-button').removeAttr("disabled")
 		var ids = []
 		var previewEl = $('#preview').empty()

@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/gopherize/app/server"
+	"github.com/matryer/gopherize.me/server"
 )
 
 func init() {
