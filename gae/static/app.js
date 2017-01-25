@@ -64,20 +64,20 @@
 		$('#download-button').removeAttr("disabled")
 		var ids = []
 		var previewEl = $('#preview').empty()
-		var first = true
+		var special = true
 		$('#options').find('input:checked').each(function(){
 			var $this = $(this)
 			var id = $this.val()
 			ids.push(id)
 			var img = getImageByID(id)
 			if (img) {
-				var mt = first ? 0 : -1000
+				var mt = special ? 0 : -1000
 				previewEl.append(
 					$("<img>", {src: img.href}).css({
 						marginTop: -1000
 					})
 				)
-				first = false
+				special = false
 			}
 		})
 		selection = ids
@@ -93,12 +93,14 @@
 	}
 
 	function shuffle() {
-		var first = true
+		var i = 0;
 		for (var cat in artwork) {
 			if (!artwork.hasOwnProperty(cat)) { continue }
+			i++
+			var special = i<3
 			var category = artwork[cat]
 			var rand = Math.round(Math.random()*(category.images.length+1))-2
-			if (rand < 0 && first) {
+			if (rand < 0 && special) {
 				rand = 0
 			}
 			if (rand < 0) {
@@ -109,7 +111,6 @@
 			}
 			var image = category.images[rand]
 			$('input[value="'+image.id+'"]').prop('checked', true)
-			first = false
 		}
 		updatePreview()
 	}
@@ -126,30 +127,33 @@
 			artworkResponse = result
 			artwork = result.categories
 
-			var first = true
+			var i = 0
+			var special = true
 			for (var cat in artwork) {
 				if (!artwork.hasOwnProperty(cat)) { continue }
+				i++
+				special = i<3
 				var category = artwork[cat]
 				var catID = category.name
 				var list = $("<div>")
 				
-				if (!first) {
+				if (!special) {
 					$("<label>", {class:'item'}).append(
-						$('<input>', {type:'radio', name:catID, value: "<none>", checked: (first ? 'checked' : null)}).change(updatePreview),
+						$('<input>', {type:'radio', name:catID, value: "<none>", checked: (special ? 'checked' : null)}).change(updatePreview),
 						$('<img>', {src: "/static/whitebox.png", 'title':'No ' + category.name, 'data-toggle':'tooltip', 'data-placement':'top'}).tooltip()
 					).appendTo(list)
 				}
 
-				var firstInCat = true
+				var specialInCat = true
 				for (var img in category.images) {
 					if (!category.images.hasOwnProperty(img)) { continue }
 					var image = category.images[img]
 
 					$("<label>", {class:'item'}).append(
-						$('<input>', {type:'radio', name:catID, value:image.id, checked: (first && firstInCat ? 'checked' : null)}).change(updatePreview),
+						$('<input>', {type:'radio', name:catID, value:image.id, checked: (special && specialInCat ? 'checked' : null)}).change(updatePreview),
 						$('<img>', {src: image.thumbnail_href, 'title':image.name, 'data-toggle':'tooltip', 'data-placement':'top'}).tooltip()
 					).appendTo(list)
-					firstInCat = false
+					specialInCat = false
 
 				}
 				
@@ -158,19 +162,19 @@
 					$("<div>", {class:'panel-heading', role:'tab'}).append(
 						$("<h4>", {class:'panel-title'}).append(
 							$("<a>", {
-								'class': (first ? '' : 'collapsed'),
+								'class': (special ? '' : 'collapsed'),
 								'role': 'button',
 								'data-toggle': 'collapse',
 								'data-parent': '#options',
 								'href': '#'+catID,
-								'aria-expanded': (first ? 'true' : 'false'),
+								'aria-expanded': (special ? 'true' : 'false'),
 								'aria-controls': catID
 							}).text(category.name).tooltip()
 						)
 					)
 				)
 				panel.append(
-					$("<div>", {id:catID, class:'panel-collapse collapse' + (first ? ' in' : ''), role:'tabpanel'}).append(
+					$("<div>", {id:catID, class:'panel-collapse collapse' + (special ? ' in' : ''), role:'tabpanel'}).append(
 						$("<div>", {class:'panel-body'}).append(
 							list
 						)
@@ -179,7 +183,6 @@
 
 				optionsEl.append(panel)
 
-				first = false
 			}
 
 			updatePreview()
