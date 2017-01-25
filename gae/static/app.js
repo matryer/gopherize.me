@@ -56,20 +56,32 @@
 
 		$('#download-button').removeAttr("disabled")
 		var ids = []
-		var previewEl = $('#preview').hide().empty()
+		var previewEl = $('#preview').empty()
+		var first = true
 		$('#options').find('input:checked').each(function(){
 			var $this = $(this)
 			var id = $this.val()
 			ids.push(id)
 			var img = getImageByID(id)
 			if (img) {
+				var mt = first ? 0 : -1000
 				previewEl.append(
-					$("<img>", {src: img.href})
+					$("<img>", {src: img.href}).css({
+						marginTop: -1000
+					})
 				)
+				first = false
 			}
 		})
 		selection = ids
-		previewEl.fadeIn()
+		var i = 1;
+		previewEl.find("img").each(function(){
+			var $this = $(this)
+			$this.animate({
+				marginTop: 0
+			}, 250*i)
+			i++
+		})
 
 	}
 
