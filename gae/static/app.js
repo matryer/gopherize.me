@@ -115,6 +115,10 @@
 		updatePreview()
 	}
 
+	function nicename(s) {
+		return s.replace(/_/g, ' ')
+	}
+
 	$(function(){
 
 		$('#shuffle-button').click(function(){
@@ -169,7 +173,7 @@
 								'href': '#'+catID,
 								'aria-expanded': (special ? 'true' : 'false'),
 								'aria-controls': catID
-							}).text(category.name).tooltip()
+							}).text(nicename(category.name)).tooltip()
 						)
 					)
 				)
