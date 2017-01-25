@@ -36,14 +36,25 @@ func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
 		s.responderr(ctx, w, r, http.StatusInternalServerError, err)
 		return
 	}
-	imgObjects, err := s.loadimages(ctx, client.Bucket(bucket), images...)
-	if err != nil {
-		s.responderr(ctx, w, r, http.StatusInternalServerError, errors.Wrap(err, "loading images"))
+	imgObjects := s.loadimages(ctx, client.Bucket(bucket), images...)
+	var first image.Image
+	for _, img := range imgObjects {
+		if img == nil {
+			continue
+		}
+		first = img
+		break
+	}
+	if first == nil {
+		s.responderr(ctx, w, r, http.StatusInternalServerError, errors.Wrap(err, "Artwork is being updated - please try again later"))
 		return
 	}
-	first := imgObjects[0]
 	output := image.NewRGBA(first.Bounds())
 	for _, img := range imgObjects {
+		if img == nil {
+			// skip missing images
+			continue
+		}
 		draw.Draw(output, output.Bounds(), img, image.ZP, draw.Over)
 	}
 	w.Header().Set("Content-Type", "image/png")
@@ -54,12 +65,15 @@ func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s server) loadimages(ctx context.Context, bucket *storage.BucketHandle, names ...string) ([]image.Image, error) {
+func (s server) loadimages(ctx context.Context, bucket *storage.BucketHandle, names ...string) []image.Image {
 	var wg sync.WaitGroup
 	var l sync.Mutex
 	images := make(map[string]image.Image)
 	errs := make(map[string]error)
 	for _, name := range names {
+		if len(name) == 0 {
+			continue
+		}
 		wg.Add(1)
 		go func(name string) {
 			defer wg.Done()
@@ -67,6 +81,7 @@ func (s server) loadimages(ctx context.Context, bucket *storage.BucketHandle, na
 			if err != nil {
 				l.Lock()
 				errs[name] = err
+				images[name] = nil
 				l.Unlock()
 				return
 			}
@@ -74,6 +89,7 @@ func (s server) loadimages(ctx context.Context, bucket *storage.BucketHandle, na
 			if err != nil {
 				l.Lock()
 				errs[name] = err
+				images[name] = nil
 				l.Unlock()
 				return
 			}
@@ -84,12 +100,11 @@ func (s server) loadimages(ctx context.Context, bucket *storage.BucketHandle, na
 	}
 	wg.Wait()
 	if len(errs) > 0 {
-		log.Errorf(ctx, "processing images: %s", errs)
-		return nil, errors.New("error processing images")
+		log.Warningf(ctx, "processing images: %s", errs)
 	}
-	imagesList := make([]image.Image, len(images))
+	imagesList := make([]image.Image, len(names))
 	for i, name := range names {
 		imagesList[i] = images[name]
 	}
-	return imagesList, nil
+	return imagesList
 }

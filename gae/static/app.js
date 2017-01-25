@@ -68,9 +68,9 @@
 		$('#options').find('input:checked').each(function(){
 			var $this = $(this)
 			var id = $this.val()
-			ids.push(id)
 			var img = getImageByID(id)
-			if (img) {
+			if (img != null) {
+				ids.push(id)
 				var mt = special ? 0 : -1000
 				previewEl.append(
 					$("<img>", {src: img.href}).css({

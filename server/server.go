@@ -41,7 +41,11 @@ func (s server) responderr(ctx context.Context, w http.ResponseWriter, r *http.R
 	var data struct {
 		Error string `json:"error"`
 	}
-	data.Error = err.Error()
+	if err != nil {
+		data.Error = err.Error()
+	} else {
+		data.Error = "Something went wrong"
+	}
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		log.Errorf(ctx, "encode response: %s", err)
 	}
