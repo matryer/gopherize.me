@@ -1,0 +1,37 @@
+body {
+	padding-top: 30px;
+}
+
+#options label.item {
+	display: inline;
+	margin-right: 5px;
+	cursor: hand;
+	opacity: 0.5;
+}
+#options label.item:hover{
+	opacity: 1;
+}
+
+#options label.item input {
+	display: none;
+}
+
+#options label.item img {
+	width: 20%;
+}
+
+#preview {
+	height: 700px;
+}
+
+#preview img {
+	top: 0px;
+	width: 100%;
+	position: absolute;
+}
+
+footer {
+	margin-top: 20px;
+	font-size: 12px;
+	text-align: right;
+}

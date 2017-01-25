@@ -1,0 +1,51 @@
+<html>
+<head>
+	<title>Gopherize.me</title>
+	<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css'>
+	<link rel='stylesheet' href='/static/app.css'>
+	<meta property="og:url" content="https://gopherize.me/" />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="Gopherize yourself" />
+	<meta property="og:description" content="Generate your own unique Gopher avatar" />
+	<meta property="og:image" content="/static/logo.png" />
+</head>
+<body>
+	<div class='container'>
+		<div class='row'>
+			<div class='col-xs-8'>
+				<div id='preview'></div>
+			</div>
+			<div class='col-xs-4'>
+				<div class='panel-group' id='options' role='tablist' aria-multiselectable='true'>
+				</div>
+				<button id='shuffle-button' class='btn btn-default'>
+					<i class='glyphicon glyphicon-refresh'></i>
+					Shuffle
+				</button>
+				<a href='/' class='btn btn-default'>Reset</a>
+				<button id='download-button' class='btn btn-primary'>
+					<i class='glyphicon glyphicon-download-alt'></i>
+					Download
+				</button>
+				<footer>
+					Artwork by <a href='https://twitter.com/ashleymcnamara' target='_blank'>Ashley McNamara</a><br />inspired by <a href='http://reneefrench.blogspot.co.uk/' target='_blank'>Renee French</a><br />
+					Web app by <a href='https://twitter.com/matryer' target='_blank'>Mat Ryer</a>
+				</footer>
+			</div>
+		</div>
+	</div>
+	<script src='https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
+	<script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js'></script>
+	<script src='/static/app.js'></script>
+	<script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-90940600-1', 'auto');
+	ga('send', 'pageview');
+
+	</script>
+</body>
+</html>
