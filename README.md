@@ -1,5 +1,7 @@
 # Gopherize.me
 
+![](./img/gopher.png)
+
 * Code for [Gopherize.me](https://gopherize.me)
 
 ## Artwork
