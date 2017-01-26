@@ -91,7 +91,11 @@ func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s server) respondWithPng(ctx context.Context, w http.ResponseWriter, r *http.Request, data []byte) {
 	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Content-Disposition", "attachment; filename=gopherizeme.png;")
+	if r.URL.Query().Get("dl") == "0" {
+		w.Header().Set("Content-Disposition", "inline")
+	} else {
+		w.Header().Set("Content-Disposition", "attachment; filename=gopherizeme.png;")
+	}
 	if _, err := w.Write(data); err != nil {
 		log.Warningf(ctx, "write png: %s", err)
 	}

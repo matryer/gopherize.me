@@ -22,7 +22,7 @@ func (s server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.artworkHandler(w, r)
 		return
 	}
-	if r.URL.Path == "/api/render" {
+	if r.URL.Path == "/api/render" || r.URL.Path == "/api/render.png" {
 		s.renderHandler(w, r)
 		return
 	}
