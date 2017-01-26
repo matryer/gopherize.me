@@ -1,7 +1,7 @@
 
 (function($){
 
-	if (location.protocol != 'https') {
+	if (location.protocol.indexOf('https')===-1) {
 		if (location.href.indexOf('fromhttp')===-1) {
 			var n = 'https://'+location.href.split('://')[1]
 			if (location.href.indexOf('?')===-1) {
