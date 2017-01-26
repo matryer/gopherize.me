@@ -78,7 +78,7 @@ func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
 	// write buffer as response
 	s.respondWithPng(ctx, w, r, buf.Bytes())
 	// put result in cache
-	cacheItem = memcache.Item{
+	cacheItem = &memcache.Item{
 		Key:   imagesStr,
 		Value: buf.Bytes(),
 	}
