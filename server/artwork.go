@@ -8,7 +8,11 @@ import (
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/blobstore"
 	"google.golang.org/appengine/file"
+	"google.golang.org/appengine/image"
+	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/memcache"
 )
 
 type artworkResponse struct {
@@ -30,6 +34,17 @@ type Image struct {
 
 func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
+
+	var res artworkResponse
+	cacheItem, err := memcache.Gob.Get(ctx, "artwork", &res)
+	if err == nil {
+		// exit early - from cache
+		log.Debugf(ctx, "cache hit")
+		s.respond(ctx, w, r, http.StatusOK, res)
+		return
+	}
+	log.Debugf(ctx, "cache miss - generating artwork data")
+
 	bucket, err := file.DefaultBucketName(ctx)
 	if err != nil {
 		s.responderr(ctx, w, r, http.StatusInternalServerError, err)
@@ -82,11 +97,28 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			categories[cat] = category
 		}
+
+		// get thumbnail URL
+		thumbURL := publicURL
+		if blobkey, err := blobstore.BlobKeyForFile(ctx, "/gs/"+object.Bucket+"/"+object.Name); err == nil {
+			serveURL, err := image.ServingURL(ctx, blobkey, &image.ServingURLOptions{
+				Secure: true,
+				Size:   70,
+			})
+			if err == nil {
+				thumbURL = serveURL.String()
+			} else {
+				log.Warningf(ctx, "image.ServingURL: %s", err)
+			}
+		} else {
+			log.Warningf(ctx, "blobstore.BlobKeyForFile: %s", err)
+		}
+
 		category.Images = append(category.Images, Image{
 			ID:            object.Name,
 			Name:          imageName,
 			Href:          publicURL,
-			ThumbnailHref: publicURL,
+			ThumbnailHref: thumbURL,
 		})
 		imagesCount++
 	}
@@ -94,9 +126,18 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 	for _, cat := range categorykeys {
 		orderedCats = append(orderedCats, *categories[cat])
 	}
-	res := artworkResponse{
+	res = artworkResponse{
 		Categories: orderedCats,
 	}
+
+	cacheItem = &memcache.Item{
+		Key:    "artwork",
+		Object: res,
+	}
+	if err := memcache.Gob.Set(ctx, cacheItem); err != nil {
+		log.Warningf(ctx, "memcache set: %s", err)
+	}
+
 	s.respond(ctx, w, r, http.StatusOK, res)
 }
 
