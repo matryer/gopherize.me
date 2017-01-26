@@ -1,6 +1,18 @@
 
 (function($){
 
+	if (location.protocol != 'https') {
+		if (location.href.indexOf('fromhttp')===-1) {
+			var n = 'https://'+location.href.split('://')[1]
+			if (location.href.indexOf('?')===-1) {
+				n += '?fromhttp=true'
+			} else {
+				n += '&fromhttp=true'
+			}
+			location.href = n
+		}
+	}
+
 	var apihost = '/api/'
 	apihost = 'https://gopherize.me/api/'
 	var apiArtwork = apihost + 'artwork/'
