@@ -9,6 +9,10 @@
 
 	var selection = []
 
+	function absurl() {
+		return apihost+'render.png?dl=0&images=' + encodeURIComponent(selection.join('|'))
+	}
+
 	$('#download-button').click(function(){
 		var $this = $(this)
 		$this.attr("disabled", "disabled")
@@ -17,10 +21,14 @@
 
 	$('#share-button').click(function(){
 		var $this = $(this)
-		var absURL = apihost+'render.png?dl=0&images=' + encodeURIComponent(selection.join('|'))
+		var absURL = absurl()
 		var text = "I just Gopherized myself on https://gopherize.me via @ashleymcnamara and @matryer"
 		var shareURL = 'https://twitter.com/share?url='+encodeURIComponent(absURL)+'&text='+encodeURIComponent(text)+'&hashtags=golang,gopherize'
 		window.open(shareURL)
+	})
+
+	$('#buy-button').click(function(){
+		buy()
 	})
 
 	function loadArtwork(callback) {
@@ -99,7 +107,7 @@
 			i++
 			var special = i<3
 			var category = artwork[cat]
-			var rand = Math.round(Math.random()*(category.images.length+2))-3
+			var rand = Math.round(Math.random()*(category.images.length+4))-5
 			if (rand < 0 && special) {
 				rand = 0
 			}
@@ -117,6 +125,10 @@
 
 	function nicename(s) {
 		return s.replace(/_/g, ' ')
+	}
+
+	function buy() {
+		window.open("https://www.zazzle.co.uk/api/create/at-238314746086099847?rf=238314746086099847&ax=DesignBlast&sr=250359396377602696&cg=0&t__useQpc=true&t__smart=true&continueUrl=https%3A%2F%2Fwww.zazzle.co.uk%2Fgopherizemestore&fwd=ProductPage&tc=&ic=&gopher="+encodeURIComponent(absurl()))
 	}
 
 	$(function(){
