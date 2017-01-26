@@ -99,7 +99,7 @@
 			i++
 			var special = i<3
 			var category = artwork[cat]
-			var rand = Math.round(Math.random()*(category.images.length+1))-2
+			var rand = Math.round(Math.random()*(category.images.length+2))-3
 			if (rand < 0 && special) {
 				rand = 0
 			}
