@@ -2,6 +2,10 @@ body {
 	padding-top: 30px;
 }
 
+#options label.item.none img {
+	border: 1px dotted #888;
+}
+
 #options label.item {
 	display: inline;
 	margin-right: 5px;

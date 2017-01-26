@@ -130,7 +130,7 @@
 		loadArtwork(function(result){
 			artworkResponse = result
 			artwork = result.categories
-
+			$(".total_combinations").text(Humanize.intComma(artworkResponse.total_combinations) + " possible combinations")
 			var i = 0
 			var special = true
 			for (var cat in artwork) {
@@ -142,7 +142,7 @@
 				var list = $("<div>")
 				
 				if (!special) {
-					$("<label>", {class:'item'}).append(
+					$("<label>", {class:'none item'}).append(
 						$('<input>', {type:'radio', name:catID, value: "<none>", checked: (special ? 'checked' : null)}).change(updatePreview),
 						$('<img>', {src: "/static/whitebox.png", 'title':'No ' + category.name, 'data-toggle':'tooltip', 'data-placement':'top'}).tooltip()
 					).appendTo(list)

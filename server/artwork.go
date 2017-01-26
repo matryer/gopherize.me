@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/appengine"
@@ -16,7 +17,8 @@ import (
 )
 
 type artworkResponse struct {
-	Categories []Category `json:"categories"`
+	Categories        []Category `json:"categories"`
+	TotalCombinations int        `json:"total_combinations"`
 }
 
 type Category struct {
@@ -75,7 +77,6 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var categorykeys []string
 	categories := make(map[string]*Category)
-	imagesCount := 0
 	for _, object := range objects {
 		if object.ContentType != "image/png" {
 			continue
@@ -120,7 +121,6 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 			Href:          publicURL,
 			ThumbnailHref: thumbURL,
 		})
-		imagesCount++
 	}
 	var orderedCats []Category
 	for _, cat := range categorykeys {
@@ -130,14 +130,20 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 		Categories: orderedCats,
 	}
 
+	// calculate total number of combinations
+	res.TotalCombinations = 1
+	for _, cat := range res.Categories {
+		res.TotalCombinations *= len(cat.Images) + 1
+	}
+
 	cacheItem = &memcache.Item{
-		Key:    "artwork",
-		Object: res,
+		Key:        "artwork",
+		Object:     res,
+		Expiration: 24 * time.Hour,
 	}
 	if err := memcache.Gob.Set(ctx, cacheItem); err != nil {
 		log.Warningf(ctx, "memcache set: %s", err)
 	}
-
 	s.respond(ctx, w, r, http.StatusOK, res)
 }
 
