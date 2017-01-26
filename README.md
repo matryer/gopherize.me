@@ -1,5 +1,6 @@
-# app
-Gopherize app
+# Gopherize.me
+
+* Code for [Gopherize.me](https://gopherize.me)
 
 ## Artwork
 
