@@ -37,6 +37,7 @@ func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
 		s.respondWithPng(ctx, w, r, cacheItem.Value)
 		return
 	}
+	log.Debugf(ctx, "cache miss - generating image")
 
 	bucket, err := file.DefaultBucketName(ctx)
 	if err != nil {
@@ -58,6 +59,7 @@ func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
 		break
 	}
 	if first == nil {
+		// couldn't find a single image!
 		s.responderr(ctx, w, r, http.StatusInternalServerError, errors.Wrap(err, "Artwork is being updated - please try again later"))
 		return
 	}
