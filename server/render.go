@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"image"
 	"image/draw"
 	"image/png"
@@ -14,18 +15,30 @@ import (
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/file"
 	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/memcache"
 )
 
 type stack []image.Image
 
 func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	images := strings.Split(q.Get("images"), "|")
+	imagesStr := q.Get("images")
+	images := strings.Split(imagesStr, "|")
 	if len(images) == 0 {
 		http.Error(w, "Must specify at least one image", http.StatusBadRequest)
 		return
 	}
 	ctx := appengine.NewContext(r)
+
+	cacheItem, err := memcache.Get(ctx, imagesStr)
+	if err == nil {
+		// exit early - from cache
+		log.Debugf(ctx, "cache hit: %s", imagesStr)
+		s.respondWithPng(ctx, w, r, cacheItem.Value)
+		return
+	}
+	log.Debugf(ctx, "cache miss - generating image")
+
 	bucket, err := file.DefaultBucketName(ctx)
 	if err != nil {
 		s.responderr(ctx, w, r, http.StatusInternalServerError, err)
@@ -46,6 +59,7 @@ func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
 		break
 	}
 	if first == nil {
+		// couldn't find a single image!
 		s.responderr(ctx, w, r, http.StatusInternalServerError, errors.Wrap(err, "Artwork is being updated - please try again later"))
 		return
 	}
@@ -57,11 +71,33 @@ func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		draw.Draw(output, output.Bounds(), img, image.ZP, draw.Over)
 	}
-	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Content-Disposition", "attachment; filename=gopherizeme.png;")
-	if err := png.Encode(w, output); err != nil {
+	// encode into a buffer
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, output); err != nil {
 		log.Errorf(ctx, "PNG encode: %s", err)
 		return
+	}
+	// write buffer as response
+	s.respondWithPng(ctx, w, r, buf.Bytes())
+	// put result in cache
+	cacheItem = &memcache.Item{
+		Key:   imagesStr,
+		Value: buf.Bytes(),
+	}
+	if err := memcache.Set(ctx, cacheItem); err != nil {
+		log.Warningf(ctx, "memcache set: %s", err)
+	}
+}
+
+func (s server) respondWithPng(ctx context.Context, w http.ResponseWriter, r *http.Request, data []byte) {
+	w.Header().Set("Content-Type", "image/png")
+	if r.URL.Query().Get("dl") == "0" {
+		w.Header().Set("Content-Disposition", "inline")
+	} else {
+		w.Header().Set("Content-Disposition", "attachment; filename=gopherizeme.png;")
+	}
+	if _, err := w.Write(data); err != nil {
+		log.Warningf(ctx, "write png: %s", err)
 	}
 }
 
