@@ -43,6 +43,10 @@
 		buy()
 	})
 
+	$('#next-button').click(function(){
+		next()
+	})
+
 	function loadArtwork(callback) {
 		busy(true)
 		$.ajax({
@@ -81,7 +85,7 @@
 	}
 
 	function updatePreview() {
-		$('#download-button').removeAttr("disabled")
+		$("#next-button").prop("disabled", false)
 		var ids = []
 		var previewEl = $('#preview').empty()
 		var special = true
@@ -145,6 +149,11 @@
 		$("form#options").trigger("reset")
 		selection = []
 		updatePreview()
+	}
+
+	function next() {
+		$("#next-button").prop("disabled", true)
+		location.href = '/save?images=' + encodeURIComponent(selection.join('|'))
 	}
 
 	$(function(){

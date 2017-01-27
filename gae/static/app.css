@@ -42,3 +42,14 @@ footer {
 	font-size: 12px;
 	text-align: right;
 }
+
+.big-gopher {
+	width: 100%;
+}
+
+.options-panel {
+	margin-top: 200px;
+}
+.options-panel-mob {
+	margin-top: 20px;
+}

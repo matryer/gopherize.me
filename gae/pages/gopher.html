@@ -1,0 +1,39 @@
+{{ define "head" }}
+	<meta property="og:url" content="{{ .PageURL }}" />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="I just Gopherized myself! #gopherize #golang" />
+	<meta property="og:description" content="I just created a unique Gopher on Gopherize.me - check it out, and then make your own for free." />
+	<meta property="og:image" content="{{ .Gopher.URL }}" />
+	<meta property="og:image:url" content="{{ .Gopher.URL }}" />
+	<meta property="og:image:secure_url" content="{{ .Gopher.URL }}" />
+	<meta property="og:image:type" content="image/png" />
+{{ end }}
+{{ define "content" }}
+	<div class='row'>
+		<div class='col-md-8'>
+			<img class='big-gopher' src='{{ .Gopher.OriginalURL }}'>
+		</div>
+		<div class='col-md-4'>
+			<div class='options-panel hidden-xs hidden-sm'></div>
+			<div class='options-panel-mob hidden-md hidden-lg'></div>
+			<div class="panel panel-default">
+				<div class="panel-body">
+					<a target='_blank' class='btn btn-default' href='https://www.zazzle.co.uk/api/create/at-238314746086099847?rf=238314746086099847&ax=DesignBlast&sr=250359396377602696&cg=0&t__useQpc=true&t__smart=true&continueUrl=https%3A%2F%2Fwww.zazzle.co.uk%2Fgopherizemestore&fwd=ProductPage&tc=&ic=&gopher={{ .Gopher.URL }}'>
+						<i class='glyphicon glyphicon-shopping-cart'></i>
+						Shop this Gopher&hellip;
+					</a>
+					<a download='Gopherized-{{ .GopherHash }}.png' target='_blank' class='btn btn-default' href='{{ .Gopher.OriginalURL }}'>
+						<i class='glyphicon glyphicon-download-alt'></i>
+						Download
+					</a>
+				</div>
+			</div>
+			{{ template "shares" }}
+			<hr />
+			<a class='btn btn-primary' href='/'>
+				 Gopherize yourself&hellip;
+			</a>
+			{{ template "footer" }}
+		</div>
+	</div>
+{{ end }}

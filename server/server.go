@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 
@@ -55,4 +56,11 @@ type FileServer string
 
 func (f FileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, string(f))
+}
+
+func ErrHandler(err error) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		io.WriteString(w, err.Error())
+	})
 }

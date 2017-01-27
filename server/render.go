@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/draw"
 	"image/png"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -20,36 +21,18 @@ import (
 
 type stack []image.Image
 
-func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	imagesStr := q.Get("images")
-	images := strings.Split(imagesStr, "|")
-	if len(images) == 0 {
-		http.Error(w, "Must specify at least one image", http.StatusBadRequest)
-		return
-	}
-	ctx := appengine.NewContext(r)
-
-	cacheItem, err := memcache.Get(ctx, imagesStr)
-	if err == nil {
-		// exit early - from cache
-		log.Debugf(ctx, "cache hit: %s", imagesStr)
-		s.respondWithPng(ctx, w, r, cacheItem.Value)
-		return
-	}
-	log.Debugf(ctx, "cache miss - generating image")
-
+func Render(ctx context.Context, w io.Writer, images []string) error {
 	bucket, err := file.DefaultBucketName(ctx)
 	if err != nil {
-		s.responderr(ctx, w, r, http.StatusInternalServerError, err)
-		return
+		err = errors.Wrap(err, "DefaultBucketName")
+		return err
 	}
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		s.responderr(ctx, w, r, http.StatusInternalServerError, err)
-		return
+		err = errors.Wrap(err, "storage.NewClient")
+		return err
 	}
-	imgObjects := s.loadimages(ctx, client.Bucket(bucket), images...)
+	imgObjects := loadimages(ctx, client.Bucket(bucket), images...)
 	var first image.Image
 	for _, img := range imgObjects {
 		if img == nil {
@@ -60,8 +43,8 @@ func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if first == nil {
 		// couldn't find a single image!
-		s.responderr(ctx, w, r, http.StatusInternalServerError, errors.Wrap(err, "Artwork is being updated - please try again later"))
-		return
+		err = errors.Wrap(err, "Artwork is being updated - please try again later")
+		return err
 	}
 	output := image.NewRGBA(first.Bounds())
 	for _, img := range imgObjects {
@@ -72,9 +55,34 @@ func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
 		draw.Draw(output, output.Bounds(), img, image.ZP, draw.Over)
 	}
 	// encode into a buffer
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, output); err != nil {
+	if err := png.Encode(w, output); err != nil {
 		log.Errorf(ctx, "PNG encode: %s", err)
+		return err
+	}
+	return nil
+}
+
+func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	imagesStr := q.Get("images")
+	images := strings.Split(imagesStr, "|")
+	if len(images) == 0 {
+		http.Error(w, "Must specify at least one image", http.StatusBadRequest)
+		return
+	}
+	ctx := appengine.NewContext(r)
+	cacheItem, err := memcache.Get(ctx, imagesStr)
+	if err == nil {
+		// exit early - from cache
+		log.Debugf(ctx, "cache hit: %s", imagesStr)
+		s.respondWithPng(ctx, w, r, cacheItem.Value)
+		return
+	}
+	log.Debugf(ctx, "cache miss - generating image")
+	var buf bytes.Buffer
+	if err := Render(ctx, &buf, images); err != nil {
+		log.Errorf(ctx, "render: %s", err)
+		http.Error(w, "Failed to render image :(", http.StatusInternalServerError)
 		return
 	}
 	// write buffer as response
@@ -101,7 +109,7 @@ func (s server) respondWithPng(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 }
 
-func (s server) loadimages(ctx context.Context, bucket *storage.BucketHandle, names ...string) []image.Image {
+func loadimages(ctx context.Context, bucket *storage.BucketHandle, names ...string) []image.Image {
 	var wg sync.WaitGroup
 	var l sync.Mutex
 	images := make(map[string]image.Image)
