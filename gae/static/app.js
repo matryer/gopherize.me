@@ -109,7 +109,6 @@
 			}, 250*i)
 			i++
 		})
-
 	}
 
 	function shuffle() {
@@ -143,10 +142,19 @@
 		window.open("https://www.zazzle.co.uk/api/create/at-238314746086099847?rf=238314746086099847&ax=DesignBlast&sr=250359396377602696&cg=0&t__useQpc=true&t__smart=true&continueUrl=https%3A%2F%2Fwww.zazzle.co.uk%2Fgopherizemestore&fwd=ProductPage&tc=&ic=&gopher="+encodeURIComponent(absurl()))
 	}
 
+	function reset() {
+		$("form#options").trigger("reset")
+		selection = []
+		updatePreview()
+	}
+
 	$(function(){
 
 		$('#shuffle-button').click(function(){
 			shuffle()
+		})
+		$('#reset-button').click(function(){
+			reset()
 		})
 
 		var optionsEl = $('#options')
