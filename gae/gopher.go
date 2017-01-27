@@ -54,9 +54,12 @@ func handleSave() http.Handler {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		if err == nil {
+			log.Debugf(ctx, "already rendered - skipping: %s", images)
+		}
 		if err == datastore.ErrNoSuchEntity {
 			// gopher doesn't exist - create it
-
+			log.Debugf(ctx, "rendering: %s", images)
 			var buf bytes.Buffer
 			if err := server.Render(ctx, &buf, images); err != nil {
 				err = errors.Wrap(err, "rendering")
