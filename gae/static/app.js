@@ -125,7 +125,6 @@
 			if (rand < 0) {
 				// none
 				$('input[name="'+category.name+'"]').prop('checked', false)
-				console.info('none')
 				continue	
 			}
 			var image = category.images[rand]
