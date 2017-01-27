@@ -15,6 +15,9 @@ body {
 #options label.item:hover{
 	opacity: 1;
 }
+#options label.item .tooltip {
+	text-transform:capitalize;
+}
 
 #options label.item input {
 	display: none;
