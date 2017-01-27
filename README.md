@@ -8,7 +8,7 @@
 
 The artwork is stored in the default Google Cloud Storage account for the app.
 
-Inside the `artwork` folder, each folder represents a cateogry of items from which 
+Inside the `artwork` folder, each folder represents a category of items from which 
 users may select one feature. A feature is a PNG image that is overlaid in category order to
 build up the final image.
 
