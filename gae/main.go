@@ -10,6 +10,7 @@ import (
 func init() {
 	mux := mux.NewRouter()
 	mux.PathPrefix("/api/").Handler(server.New())
+	mux.Handle("/branding", brandingHandler())
 	mux.Handle("/save", handleSave())
 	mux.Handle("/gopher/{gopherhash}", handleGopher())
 	mux.Handle("/", server.FileServer("pages/index.html"))
