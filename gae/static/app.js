@@ -184,7 +184,7 @@
 				if (!special) {
 					$("<label>", {class:'none item'}).append(
 						$('<input>', {type:'radio', name:catID, value: "<none>", checked: (special ? 'checked' : null)}).change(updatePreview),
-						$('<img>', {src: "/static/whitebox.png", 'title':'Remove', 'data-toggle':'tooltip', 'data-placement':'top'}).tooltip()
+						$('<img>', {src: "/static/whitebox.png", 'title':'Remove', 'data-toggle':'tooltip', 'data-placement':'bottom'}).tooltip()
 					).appendTo(list)
 				}
 
@@ -195,7 +195,7 @@
 
 					$("<label>", {class:'item'}).append(
 						$('<input>', {type:'radio', name:catID, value:image.id, checked: (special && specialInCat ? 'checked' : null)}).change(updatePreview),
-						$('<img>', {src: image.thumbnail_href, 'title':image.name, 'data-toggle':'tooltip', 'data-placement':'top'}).tooltip()
+						$('<img>', {src: image.thumbnail_href, 'title':image.name, 'data-toggle':'tooltip', 'data-placement':'bottom'}).tooltip()
 					).appendTo(list)
 					specialInCat = false
 
