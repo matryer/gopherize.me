@@ -104,7 +104,7 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 		if blobkey, err := blobstore.BlobKeyForFile(ctx, "/gs/"+object.Bucket+"/"+object.Name); err == nil {
 			serveURL, err := image.ServingURL(ctx, blobkey, &image.ServingURLOptions{
 				Secure: true,
-				Size:   70,
+				Size:   71,
 			})
 			if err == nil {
 				thumbURL = serveURL.String()
