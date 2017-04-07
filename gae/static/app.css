@@ -10,10 +10,10 @@ body {
 	display: inline;
 	margin-right: 5px;
 	cursor: hand;
-	opacity: 0.5;
+	opacity: 0.8;
 }
 #options label.item:hover{
-	opacity: 1;
+    opacity: 1;
 }
 #options label.item .tooltip {
 	text-transform:capitalize;
@@ -52,4 +52,9 @@ footer {
 }
 .options-panel-mob {
 	margin-top: 20px;
+}
+
+.panel-body {
+	max-height: 350px;
+	overflow-y: scroll;
 }

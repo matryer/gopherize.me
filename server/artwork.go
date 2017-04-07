@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/blobstore"
 	"google.golang.org/appengine/file"
@@ -62,18 +63,16 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var objects []*storage.ObjectAttrs
 	for {
-		bucketlist, err := client.Bucket(bucket).List(ctx, q)
+		bucketlist := client.Bucket(bucket).Objects(ctx, q)
+		obj, err := bucketlist.Next()
+		if err == iterator.Done {
+			break
+		}
 		if err != nil {
 			s.responderr(ctx, w, r, http.StatusInternalServerError, err)
 			return
 		}
-		for _, obj := range bucketlist.Results {
-			objects = append(objects, obj)
-		}
-		if bucketlist.Next == nil {
-			break
-		}
-		q = bucketlist.Next
+		objects = append(objects, obj)
 	}
 	var categorykeys []string
 	categories := make(map[string]*Category)
