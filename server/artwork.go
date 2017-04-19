@@ -39,14 +39,19 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
 	var res artworkResponse
-	cacheItem, err := memcache.Gob.Get(ctx, "artwork", &res)
-	if err == nil {
-		// exit early - from cache
-		log.Debugf(ctx, "cache hit")
-		s.respond(ctx, w, r, http.StatusOK, res)
-		return
+
+	if len(r.URL.Query().Get("nocache")) == 0 {
+		_, err := memcache.Gob.Get(ctx, "artwork", &res)
+		if err == nil {
+			// exit early - from cache
+			log.Debugf(ctx, "cache hit")
+			s.respond(ctx, w, r, http.StatusOK, res)
+			return
+		}
+		log.Debugf(ctx, "cache miss - generating artwork data")
+	} else {
+		log.Debugf(ctx, "skipping cache - generating artwork data")
 	}
-	log.Debugf(ctx, "cache miss - generating artwork data")
 
 	bucket, err := file.DefaultBucketName(ctx)
 	if err != nil {
@@ -135,7 +140,7 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 		res.TotalCombinations *= len(cat.Images) + 1
 	}
 
-	cacheItem = &memcache.Item{
+	cacheItem := &memcache.Item{
 		Key:        "artwork",
 		Object:     res,
 		Expiration: 24 * time.Hour,
