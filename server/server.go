@@ -19,6 +19,10 @@ func New() http.Handler {
 type server struct{}
 
 func (s server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, "/api/artwork/generate") {
+		s.generateArtworkHandler(w, r)
+		return
+	}
 	if strings.HasPrefix(r.URL.Path, "/api/artwork") {
 		s.artworkHandler(w, r)
 		return

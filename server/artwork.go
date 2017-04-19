@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/blobstore"
+	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/file"
 	"google.golang.org/appengine/image"
 	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/memcache"
 )
 
 type artworkResponse struct {
@@ -35,42 +36,38 @@ type Image struct {
 	ThumbnailHref string `json:"thumbnail_href"`
 }
 
-func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
-
-	var res artworkResponse
-	cacheItem, err := memcache.Gob.Get(ctx, "artwork", &res)
-	if err == nil {
-		// exit early - from cache
-		log.Debugf(ctx, "cache hit")
-		s.respond(ctx, w, r, http.StatusOK, res)
-		return
+func (s server) getArtwork(ctx context.Context) (*artworkResponse, error) {
+	artworkKey := datastore.NewKey(ctx, "Artwork", "latest", 0, nil)
+	var artwork artworkResponse
+	err := datastore.Get(ctx, artworkKey, &artwork)
+	if err != nil {
+		return nil, err
 	}
-	log.Debugf(ctx, "cache miss - generating artwork data")
+	return &artwork, nil
+}
 
+func (s server) generateArtwork(ctx context.Context) (*artworkResponse, error) {
 	bucket, err := file.DefaultBucketName(ctx)
 	if err != nil {
-		s.responderr(ctx, w, r, http.StatusInternalServerError, err)
-		return
+		return nil, err
 	}
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		s.responderr(ctx, w, r, http.StatusInternalServerError, err)
-		return
+		return nil, err
 	}
 	q := &storage.Query{
 		Prefix: "artwork",
 	}
 	var objects []*storage.ObjectAttrs
+	ctxObjList, _ := context.WithTimeout(ctx, 10*time.Second)
+	bucketlist := client.Bucket(bucket).Objects(ctxObjList, q)
 	for {
-		bucketlist := client.Bucket(bucket).Objects(ctx, q)
 		obj, err := bucketlist.Next()
 		if err == iterator.Done {
 			break
 		}
 		if err != nil {
-			s.responderr(ctx, w, r, http.StatusInternalServerError, err)
-			return
+			return nil, err
 		}
 		objects = append(objects, obj)
 	}
@@ -80,6 +77,7 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 		if object.ContentType != "image/png" {
 			continue
 		}
+		log.Debugf(ctx, "parsing %s", object.Name)
 		name := strings.TrimPrefix(object.Name, "artwork/")
 		imageName := nicename(name)
 		publicURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", object.Bucket, object.Name)
@@ -100,8 +98,9 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 
 		// get thumbnail URL
 		thumbURL := publicURL
-		if blobkey, err := blobstore.BlobKeyForFile(ctx, "/gs/"+object.Bucket+"/"+object.Name); err == nil {
-			serveURL, err := image.ServingURL(ctx, blobkey, &image.ServingURLOptions{
+		ctxThis, _ := context.WithTimeout(ctx, 10*time.Second)
+		if blobkey, err := blobstore.BlobKeyForFile(ctxThis, "/gs/"+object.Bucket+"/"+object.Name); err == nil {
+			serveURL, err := image.ServingURL(ctxThis, blobkey, &image.ServingURLOptions{
 				Secure: true,
 				Size:   71,
 			})
@@ -113,37 +112,57 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			log.Warningf(ctx, "blobstore.BlobKeyForFile: %s", err)
 		}
-
 		category.Images = append(category.Images, Image{
 			ID:            object.Name,
 			Name:          imageName,
 			Href:          publicURL,
 			ThumbnailHref: thumbURL,
 		})
+		break // TODO: remove me
 	}
 	var orderedCats []Category
 	for _, cat := range categorykeys {
 		orderedCats = append(orderedCats, *categories[cat])
 	}
-	res = artworkResponse{
+	res := artworkResponse{
 		Categories: orderedCats,
 	}
-
 	// calculate total number of combinations
 	res.TotalCombinations = 1
 	for _, cat := range res.Categories {
 		res.TotalCombinations *= len(cat.Images) + 1
 	}
+	log.Debugf(ctx, "found %d categories", res.Categories)
+	log.Debugf(ctx, "%d total combinations", res.TotalCombinations)
+	artworkKey := datastore.NewKey(ctx, "Artwork", "latest", 0, nil)
+	_, err = datastore.Put(ctx, artworkKey, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
 
-	cacheItem = &memcache.Item{
-		Key:        "artwork",
-		Object:     res,
-		Expiration: 24 * time.Hour,
+func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+	artwork, err := s.getArtwork(ctx)
+	if err != nil {
+		s.responderr(ctx, w, r, http.StatusInternalServerError, err)
+		return
 	}
-	if err := memcache.Gob.Set(ctx, cacheItem); err != nil {
-		log.Warningf(ctx, "memcache set: %s", err)
+	s.respond(ctx, w, r, http.StatusOK, artwork)
+}
+
+func (s server) generateArtworkHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+	log.Debugf(ctx, "Generating artwork...")
+	_, err := s.generateArtwork(ctx)
+	if err != nil {
+		log.Errorf(ctx, "Generating artwork failed: %s", err)
+		s.responderr(ctx, w, r, http.StatusInternalServerError, err)
+		return
 	}
-	s.respond(ctx, w, r, http.StatusOK, res)
+	log.Debugf(ctx, "Generating artwork complete")
+	s.respond(ctx, w, r, http.StatusOK, nil)
 }
 
 func nicename(s string) string {

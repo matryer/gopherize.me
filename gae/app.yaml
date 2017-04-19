@@ -1,7 +1,6 @@
-application: gopherizeme
-version: v4
 runtime: go
 api_version: go1
+manual_scaling:
 
 handlers:
 - url: /favicon\.ico

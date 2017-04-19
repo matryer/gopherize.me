@@ -1,0 +1,5 @@
+cron:
+- description: daily summary job
+  url: /api/artwork/generate
+  target: default
+  schedule: every 24 hours
