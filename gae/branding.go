@@ -1,4 +1,4 @@
-package main
+package gopherizeme
 
 import (
 	"html/template"

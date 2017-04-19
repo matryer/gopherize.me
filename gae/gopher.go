@@ -1,4 +1,4 @@
-package main
+package gopherizeme
 
 import (
 	"bytes"
@@ -67,7 +67,6 @@ func handleSave() http.Handler {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-
 			bucket, err := file.DefaultBucketName(ctx)
 			if err != nil {
 				err = errors.Wrap(err, "DefaultBucketName")

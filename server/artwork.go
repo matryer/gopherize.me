@@ -62,8 +62,8 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 		Prefix: "artwork",
 	}
 	var objects []*storage.ObjectAttrs
+	bucketlist := client.Bucket(bucket).Objects(ctx, q)
 	for {
-		bucketlist := client.Bucket(bucket).Objects(ctx, q)
 		obj, err := bucketlist.Next()
 		if err == iterator.Done {
 			break
