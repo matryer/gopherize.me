@@ -3,6 +3,7 @@ package gopherizeme
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-
 	"github.com/gorilla/mux"
 	"github.com/matryer/gopherize.me/server"
 	"github.com/pkg/errors"
@@ -27,11 +27,12 @@ const (
 )
 
 type Gopher struct {
-	Images       []string `datastore:",noindex"`
-	OriginalURL  string   `datastore:",noindex"`
-	URL          string   `datastore:",noindex"`
-	ThumbnailURL string   `datastore:",noindex"`
-	CTime        time.Time
+	ID           string    `datastore:"-" json:"id,omitempty"`
+	Images       []string  `datastore:",noindex" json:"images"`
+	OriginalURL  string    `datastore:",noindex" json:"original_url"`
+	URL          string    `datastore:",noindex" json:"url"`
+	ThumbnailURL string    `datastore:",noindex" json:"thumbnail_url"`
+	CTime        time.Time `json:"ctime"`
 }
 
 func handleSave() http.Handler {
@@ -201,6 +202,86 @@ func handleGopher() http.Handler {
 		if err := tpl.ExecuteTemplate(w, "layout", pageInfo); err != nil {
 			log.Errorf(ctx, "template execute: %s", err)
 			server.ErrHandler(err).ServeHTTP(w, r)
+		}
+	})
+}
+
+func handleGopherAPI() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := appengine.NewContext(r)
+		gopherHash := mux.Vars(r)["gopherhash"]
+		var gopher Gopher
+		gopherKey := datastore.NewKey(ctx, gopherKind, gopherHash, 0, nil)
+		err := datastore.Get(ctx, gopherKey, &gopher)
+		if err == datastore.ErrNoSuchEntity {
+			http.NotFound(w, r)
+			return
+		}
+		if err != nil {
+			err = errors.Wrap(err, "load gopher")
+			log.Errorf(ctx, "%s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		imageList := strings.Join(gopher.Images, "|")
+		gopher.ID = hash(imageList)
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(gopher); err != nil {
+			err = errors.Wrap(err, "encode gopher")
+			log.Errorf(ctx, "%s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func handleRecentGophers() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var response struct {
+			Gophers []Gopher `json:"gophers"`
+		}
+		ctx := appengine.NewContext(r)
+		keys, err := datastore.NewQuery(gopherKind).Limit(510).Order("-CTime").GetAll(ctx, &response.Gophers)
+		if err != nil {
+			err = errors.Wrap(err, "load gophers")
+			log.Errorf(ctx, "%s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		for i := range keys {
+			imageList := strings.Join(response.Gophers[i].Images, "|")
+			response.Gophers[i].ID = hash(imageList)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			err = errors.Wrap(err, "encode gopher")
+			log.Errorf(ctx, "%s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func handleGophersCount() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := appengine.NewContext(r)
+		n, err := datastore.NewQuery(gopherKind).Count(ctx)
+		if err != nil {
+			err = errors.Wrap(err, "counting gophers is hard")
+			log.Errorf(ctx, "%s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		var response struct {
+			N int `json:"gophers_count"`
+		}
+		response.N = n
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			err = errors.Wrap(err, "encode gopher")
+			log.Errorf(ctx, "%s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	})
 }
