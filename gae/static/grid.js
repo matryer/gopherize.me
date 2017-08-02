@@ -1,10 +1,10 @@
 $(function(){
+	var results = null;
 	$("#grid").each(function(){
 		var $this = $(this)
 		$.ajax({
-			url: 'https://gopherize.me/gophers/recent/json',
+			url: 'https://gopherize.me/gophers/recent/json?limit=1000',
 			success: function(results){
-				console.info(results)
 				for (var i in results.gophers) {
 					if (!results.gophers.hasOwnProperty(i)) { continue }
 					var gopher = results.gophers[i]
@@ -19,6 +19,5 @@ $(function(){
 				console.warn(arguments)
 			}
 		})
-
 	})
 })

@@ -1,6 +1,21 @@
 {{ define "scripts" }}
 	<script src='/static/grid.js?cb=9'></script>
 {{ end }}
+{{ define "title" }}A concurrence of Gophers - Gopherize.me{{ end }}
 {{ define "content" }}
+	<style>
+		#grid a {
+			margin-right: -25px;
+			position: relative;
+			top: 0;
+			transition: top ease 0.25s;
+		}
+		#grid a:hover {
+			top: -10px;
+		}
+</style>
+	<div class='container'>
+		<h2>A concurrence of Gophers</h2>
+	</div>
 	<div id='grid'></div>
 {{ end }}

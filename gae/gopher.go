@@ -6,11 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"math"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
+	humanize "github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
 	"github.com/matryer/gopherize.me/server"
 	"github.com/pkg/errors"
@@ -33,6 +36,30 @@ type Gopher struct {
 	URL          string    `datastore:",noindex" json:"url"`
 	ThumbnailURL string    `datastore:",noindex" json:"thumbnail_url"`
 	CTime        time.Time `json:"ctime"`
+}
+
+var ageMagnitudes = []humanize.RelTimeMagnitude{
+	{time.Second, "born just now", time.Second},
+	{2 * time.Second, "1 second %s", 1},
+	{time.Minute, "%d seconds %s", time.Second},
+	{2 * time.Minute, "1 minute %s", 1},
+	{time.Hour, "%d minutes %s", time.Minute},
+	{2 * time.Hour, "1 hour %s", 1},
+	{humanize.Day, "%d hours %s", time.Hour},
+	{2 * humanize.Day, "1 day %s", 1},
+	{humanize.Week, "%d days %s", humanize.Day},
+	{2 * humanize.Week, "1 week %s", 1},
+	{humanize.Month, "%d weeks %s", humanize.Week},
+	{2 * humanize.Month, "1 month %s", 1},
+	{humanize.Year, "%d months %s", humanize.Month},
+	{18 * humanize.Month, "1 year %s", 1},
+	{2 * humanize.Year, "2 years %s", 1},
+	{humanize.LongTime, "%d years %s", humanize.Year},
+	{math.MaxInt64, "a long while %s", 1},
+}
+
+func (g Gopher) Age() string {
+	return humanize.CustomRelTime(g.CTime, time.Now(), "old", "", ageMagnitudes)
 }
 
 func handleSave() http.Handler {
@@ -240,8 +267,16 @@ func handleRecentGophers() http.Handler {
 		var response struct {
 			Gophers []Gopher `json:"gophers"`
 		}
+		limitStr := r.URL.Query().Get("limit")
+		limit, err := strconv.Atoi(limitStr)
+		if err != nil {
+			limit = 100
+		}
+		if limit > 1000 {
+			limit = 1000
+		}
 		ctx := appengine.NewContext(r)
-		keys, err := datastore.NewQuery(gopherKind).Limit(510).Order("-CTime").GetAll(ctx, &response.Gophers)
+		keys, err := datastore.NewQuery(gopherKind).Limit(limit).Order("-CTime").GetAll(ctx, &response.Gophers)
 		if err != nil {
 			err = errors.Wrap(err, "load gophers")
 			log.Errorf(ctx, "%s", err)
