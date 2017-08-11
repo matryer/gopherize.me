@@ -19,8 +19,5 @@ func init() {
 	mux.Handle("/gophers/count", handleGophersCount())
 	mux.Handle("/grid", handleGrid())
 	mux.Handle("/", server.FileServer("pages/index.html"))
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-	})
-	http.Handle("/", c.Handler(mux))
+	http.Handle("/", cors.Default().Handler(mux))
 }
