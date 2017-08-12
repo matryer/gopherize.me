@@ -23,7 +23,7 @@ $(function(){
                 onPairDisclosed: function(e) {
                     if (e.finished) {
                         var time = sw.stopwatch('getTime')
-                        location.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent("I just matched ten Gophers in " + time + "ms! Can you beat that? https://pairs.gopherize.me/ #gopherizeme via @ashleymcnamara and @matryer" )
+                        location.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent("I just matched ten Gophers in " + time + "ms! Can you beat that? https://pairs.gopherize.me/ #gopherizeme #golang via @ashleymcnamara and @matryer" )
                     }
                 }
             })

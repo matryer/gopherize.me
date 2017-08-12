@@ -1,7 +1,7 @@
 /* MemoryGame: a jQuery plugin for creating memory card games
                by Matteo Sisti Sette
 
-http://gitgub.com/matteosistisette/jquery-ui-memorygame
+https://github.com/matteosistisette/jquery-ui-memory-game
 
 */
 
