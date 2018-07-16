@@ -204,17 +204,15 @@
 				var panel = $("<div>", {class:'panel panel-default'})
 				panel.append(
 					$("<div>", {class:'panel-heading', role:'tab'}).append(
-						$("<h4>", {class:'panel-title'}).append(
-							$("<a>", {
-								'class': (special ? '' : 'collapsed'),
-								'role': 'button',
-								'data-toggle': 'collapse',
-								'data-parent': '#options',
-								'href': '#'+catID,
-								'aria-expanded': (special ? 'true' : 'false'),
-								'aria-controls': catID
-							}).text(nicename(category.name)).tooltip()
-						)
+						$("<h4>", {
+							'class':'panel-title' + (special ? '' : ' collapsed'),
+                            'role': 'button',
+                            'data-toggle': 'collapse',
+                            'data-parent': '#options',
+                            'href': '#'+catID,
+                            'aria-expanded': (special ? 'true' : 'false'),
+                            'aria-controls': catID
+						}).text(nicename(category.name)).tooltip()
 					)
 				)
 				panel.append(
