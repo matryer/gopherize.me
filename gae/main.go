@@ -1,4 +1,4 @@
-package gopherizeme
+package main
 
 import (
 	"net/http"
@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/matryer/gopherize.me/server"
 	"github.com/rs/cors"
+	"google.golang.org/appengine"
 )
 
 func init() {
@@ -20,4 +21,8 @@ func init() {
 	mux.Handle("/grid", handleGrid())
 	mux.Handle("/", server.FileServer("pages/index.html"))
 	http.Handle("/", cors.Default().Handler(mux))
+}
+
+func main() {
+	appengine.Main()
 }

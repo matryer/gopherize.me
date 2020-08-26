@@ -1,5 +1,4 @@
-runtime: go
-api_version: go1
+runtime: go111
 
 handlers:
 - url: /favicon\.ico
@@ -11,4 +10,4 @@ handlers:
 - url: /static
   static_dir: static
 - url: /.*
-  script: _go_app
+  script: auto
