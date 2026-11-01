@@ -1,4 +1,13 @@
-runtime: go115
+runtime: go126
+instance_class: F2
+app_engine_apis: true
+
+env_variables:
+  BUCKET_NAME: gopherizeme.appspot.com
+  GOMEMLIMIT: 350MiB
+
+automatic_scaling:
+  max_concurrent_requests: 10
 
 handlers:
 - url: /favicon\.ico

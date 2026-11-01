@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/matryer/gopherize.me/server"
 	"github.com/rs/cors"
-	"google.golang.org/appengine"
+	"google.golang.org/appengine/v2"
 )
 
 func init() {
