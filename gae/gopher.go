@@ -167,7 +167,7 @@ func handleSave() http.Handler {
 }
 
 func handleGopher() http.Handler {
-	tpl, err := template.ParseFiles("pages/_layout.html", "pages/gopher.html")
+	tpl, err := template.ParseFS(pageFiles, "pages/_layout.html", "pages/gopher.html")
 	if err != nil {
 		return server.ErrHandler(err)
 	}

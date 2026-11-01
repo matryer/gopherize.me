@@ -10,7 +10,7 @@ import (
 )
 
 func brandingHandler() http.Handler {
-	tpl, err := template.ParseFiles("pages/_layout.html", "pages/branding.html")
+	tpl, err := template.ParseFS(pageFiles, "pages/_layout.html", "pages/branding.html")
 	if err != nil {
 		return server.ErrHandler(err)
 	}
