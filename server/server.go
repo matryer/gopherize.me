@@ -8,7 +8,7 @@ import (
 
 	"github.com/fasterness/cors"
 	"golang.org/x/net/context"
-	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/v2/log"
 )
 
 // New makes a new server.

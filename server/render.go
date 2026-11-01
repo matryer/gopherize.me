@@ -8,58 +8,68 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 
 	"cloud.google.com/go/storage"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/file"
-	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/memcache"
+	"google.golang.org/appengine/v2"
+	"google.golang.org/appengine/v2/log"
+	"google.golang.org/appengine/v2/memcache"
 )
 
-type stack []image.Image
+// Limit expensive renders per instance so simultaneous saves cannot exhaust memory.
+var renderSlots = make(chan struct{}, 1)
 
 func Render(ctx context.Context, w io.Writer, images []string) error {
-	bucket, err := file.DefaultBucketName(ctx)
+	if len(images) == 0 || len(images) > 32 {
+		return errors.New("must specify between 1 and 32 images")
+	}
+	select {
+	case renderSlots <- struct{}{}:
+		defer func() { <-renderSlots }()
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+	bucket, err := DefaultBucketName()
 	if err != nil {
-		err = errors.Wrap(err, "DefaultBucketName")
 		return err
 	}
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		err = errors.Wrap(err, "storage.NewClient")
-		return err
+		return errors.Wrap(err, "storage.NewClient")
 	}
-	imgObjects := loadimages(ctx, client.Bucket(bucket), images...)
-	var first image.Image
-	for _, img := range imgObjects {
-		if img == nil {
+	defer client.Close()
+	return renderLayers(w, images, func(name string) (image.Image, error) {
+		r, err := client.Bucket(bucket).Object(name).NewReader(ctx)
+		if err != nil {
+			return nil, err
+		}
+		defer r.Close()
+		img, _, err := image.Decode(r)
+		return img, err
+	})
+}
+
+// Decode and composite one layer at a time instead of retaining every decoded PNG.
+func renderLayers(w io.Writer, names []string, load func(string) (image.Image, error)) error {
+	var output *image.RGBA
+	for _, name := range names {
+		if name == "" {
 			continue
 		}
-		first = img
-		break
-	}
-	if first == nil {
-		// couldn't find a single image!
-		err = errors.Wrap(err, "Artwork is being updated - please try again later")
-		return err
-	}
-	output := image.NewRGBA(first.Bounds())
-	for _, img := range imgObjects {
-		if img == nil {
-			// skip missing images
-			continue
+		img, err := load(name)
+		if err != nil {
+			return errors.Wrapf(err, "load image %q", name)
 		}
-		draw.Draw(output, output.Bounds(), img, image.ZP, draw.Over)
+		if output == nil {
+			output = image.NewRGBA(img.Bounds())
+		}
+		draw.Draw(output, output.Bounds(), img, image.Point{}, draw.Over)
 	}
-	// encode into a buffer
-	if err := png.Encode(w, output); err != nil {
-		log.Errorf(ctx, "PNG encode: %s", err)
-		return err
+	if output == nil {
+		return errors.New("must specify at least one image")
 	}
-	return nil
+	return png.Encode(w, output)
 }
 
 func (s server) renderHandler(w http.ResponseWriter, r *http.Request) {
@@ -107,48 +117,4 @@ func (s server) respondWithPng(ctx context.Context, w http.ResponseWriter, r *ht
 	if _, err := w.Write(data); err != nil {
 		log.Warningf(ctx, "write png: %s", err)
 	}
-}
-
-func loadimages(ctx context.Context, bucket *storage.BucketHandle, names ...string) []image.Image {
-	var wg sync.WaitGroup
-	var l sync.Mutex
-	images := make(map[string]image.Image)
-	errs := make(map[string]error)
-	for _, name := range names {
-		if len(name) == 0 {
-			continue
-		}
-		wg.Add(1)
-		go func(name string) {
-			defer wg.Done()
-			r, err := bucket.Object(name).NewReader(ctx)
-			if err != nil {
-				l.Lock()
-				errs[name] = err
-				images[name] = nil
-				l.Unlock()
-				return
-			}
-			imageObj, _, err := image.Decode(r)
-			if err != nil {
-				l.Lock()
-				errs[name] = err
-				images[name] = nil
-				l.Unlock()
-				return
-			}
-			l.Lock()
-			images[name] = imageObj
-			l.Unlock()
-		}(name)
-	}
-	wg.Wait()
-	if len(errs) > 0 {
-		log.Warningf(ctx, "processing images: %s", errs)
-	}
-	imagesList := make([]image.Image, len(names))
-	for i, name := range names {
-		imagesList[i] = images[name]
-	}
-	return imagesList
 }

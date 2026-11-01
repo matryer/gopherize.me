@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"math"
 	"net/http"
 	"strconv"
@@ -17,12 +18,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/matryer/gopherize.me/server"
 	"github.com/pkg/errors"
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/blobstore"
-	"google.golang.org/appengine/datastore"
-	"google.golang.org/appengine/file"
-	"google.golang.org/appengine/image"
-	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/v2"
+	"google.golang.org/appengine/v2/blobstore"
+	"google.golang.org/appengine/v2/datastore"
+	"google.golang.org/appengine/v2/image"
+	"google.golang.org/appengine/v2/log"
 )
 
 const (
@@ -95,7 +95,7 @@ func handleSave() http.Handler {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			bucket, err := file.DefaultBucketName(ctx)
+			bucket, err := server.DefaultBucketName()
 			if err != nil {
 				err = errors.Wrap(err, "DefaultBucketName")
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -107,12 +107,13 @@ func handleSave() http.Handler {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			defer client.Close()
 			objpath := "gophers/" + imagesHash + ".png"
 			object := client.Bucket(bucket).Object(objpath)
 			objW := object.NewWriter(ctx)
 			objW.ACL = []storage.ACLRule{{Entity: storage.AllUsers, Role: storage.RoleReader}}
 			objW.CacheControl = "public, max-age=31536000"
-			if err := server.Render(ctx, objW, images); err != nil {
+			if _, err := io.Copy(objW, &buf); err != nil {
 				objW.Close()
 				err = errors.Wrap(err, "Render")
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -166,7 +167,7 @@ func handleSave() http.Handler {
 }
 
 func handleGopher() http.Handler {
-	tpl, err := template.ParseFiles("pages/_layout.html", "pages/gopher.html")
+	tpl, err := template.ParseFS(pageFiles, "pages/_layout.html", "pages/gopher.html")
 	if err != nil {
 		return server.ErrHandler(err)
 	}

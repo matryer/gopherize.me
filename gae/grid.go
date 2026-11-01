@@ -6,12 +6,12 @@ import (
 
 	"github.com/matryer/gopherize.me/server"
 	"github.com/pkg/errors"
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/v2"
+	"google.golang.org/appengine/v2/log"
 )
 
 func handleGrid() http.Handler {
-	tpl, err := template.ParseFiles("pages/_layout.html", "pages/grid.html")
+	tpl, err := template.ParseFS(pageFiles, "pages/_layout.html", "pages/grid.html")
 	if err != nil {
 		return server.ErrHandler(err)
 	}

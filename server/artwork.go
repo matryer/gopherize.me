@@ -9,12 +9,11 @@ import (
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/blobstore"
-	"google.golang.org/appengine/file"
-	"google.golang.org/appengine/image"
-	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/memcache"
+	"google.golang.org/appengine/v2"
+	"google.golang.org/appengine/v2/blobstore"
+	"google.golang.org/appengine/v2/image"
+	"google.golang.org/appengine/v2/log"
+	"google.golang.org/appengine/v2/memcache"
 )
 
 type artworkResponse struct {
@@ -53,7 +52,7 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debugf(ctx, "skipping cache - generating artwork data")
 	}
 
-	bucket, err := file.DefaultBucketName(ctx)
+	bucket, err := DefaultBucketName()
 	if err != nil {
 		s.responderr(ctx, w, r, http.StatusInternalServerError, err)
 		return
@@ -63,6 +62,7 @@ func (s server) artworkHandler(w http.ResponseWriter, r *http.Request) {
 		s.responderr(ctx, w, r, http.StatusInternalServerError, err)
 		return
 	}
+	defer client.Close()
 	q := &storage.Query{
 		Prefix: "artwork",
 	}
