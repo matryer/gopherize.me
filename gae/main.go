@@ -10,7 +10,7 @@ import (
 	"google.golang.org/appengine/v2"
 )
 
-//go:embed pages
+//go:embed pages/*.html
 var pageFiles embed.FS
 
 func init() {
