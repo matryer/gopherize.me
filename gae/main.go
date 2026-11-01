@@ -10,11 +10,17 @@ import (
 	"google.golang.org/appengine/v2"
 )
 
-//go:embed pages/*.html
+//go:embed pages/*.html static
 var pageFiles embed.FS
 
 func init() {
 	mux := mux.NewRouter()
+	mux.PathPrefix("/static/").Handler(http.FileServer(http.FS(pageFiles)))
+	for _, path := range []string{"/favicon.ico", "/favicon"} {
+		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFileFS(w, r, pageFiles, "static/favicon.ico")
+		})
+	}
 	mux.Handle("/gopher/{gopherhash}/json", handleGopherAPI())
 	mux.Handle("/gophers/recent/json", handleRecentGophers())
 	mux.PathPrefix("/api/").Handler(server.New())
